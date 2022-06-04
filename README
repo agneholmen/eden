@@ -1,0 +1,25 @@
+Simulation project that will grow incrementally.
+The basic idea is that it's a world that will be populated by predators, herbivores, and plants.
+In a first stage, this will be grass, rabbit, and wolf.
+
+The world is run in ticks. Each tick is an update, where the animals move, eat, and breed, and the grass grows.
+
+Animals:
+- age: 0 when born and increased slowly for each tick. I guess each species has a max age, and the closer they get to it, the more likely they are to die of old age.
+- sex: female or male. Under certain circumstances, 1 male and 1 female will breed when they meet.
+- strength: High strength uses energy faster but can kill larger prey.
+- agility: Determines how fast they move and how good they are at evading predators and catching prey.
+- fatigue: More of a short-term indicator than energy. Energy is used to lower fatigue. Fatigue increases when hunting prey or evading predators.
+- energy: Long-term indicator. Increases when the animal eats. If it reaches 0, the animal dies. Decreases slowly every tick, and more-so if the animal moves.
+
+
+
+Actions:
+ - eat
+ - breed
+ - rest
+
+ Grass:
+ - Grows 1 each tick
+ - If no grass in a box, no growth
+ - If grass above a certain number, spread to adjacent box
