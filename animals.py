@@ -34,8 +34,9 @@ class Animal:
         return "Energy: {0}\nSex: {1}\nAge: {2}\nStrength: {3}\nAgility: {4}\nFatigue: {5}".format(self.energy, self.sex, self.age, self.strength, self.agility, self.fatigue)
 
 class Rabbit(Animal):
-    def __init__(self, strength=RABBIT_BASE_STRENGTH, agility=RABBIT_BASE_AGILITY):
+    def __init__(self, strength=RABBIT_BASE_STRENGTH + random.randint(-5, 5), agility=RABBIT_BASE_AGILITY + random.randint(-5, 5)):
         super().__init__(strength, agility)
+        self.breeding = 3
 
     def eat_grass(self, grass, amount=10):
         self.energy += grass.eaten(amount)
@@ -47,5 +48,13 @@ class Rabbit(Animal):
         return f"Name: {self.name}, Sex: {self.sex}, Strength: {self.strength}, Agility: {self.agility}, Energy: {self.energy}"
 
 class Wolf(Animal):
-    def __init__(self, strength=WOLF_BASE_STRENGTH, agility=WOLF_BASE_AGILITY):
+    def __init__(self, strength=WOLF_BASE_STRENGTH + random.randint(-5, 5), agility=WOLF_BASE_AGILITY + random.randint(-5, 5), energy=75):
         super().__init__(strength, agility)
+        self.energy = energy
+        self.breeding = 10
+
+    def tire(self, amount=5):
+        self.energy -= amount
+
+    def __str__(self):
+        return f"Name: {self.name}, Sex: {self.sex}, Strength: {self.strength}, Agility: {self.agility}, Energy: {self.energy}"    
