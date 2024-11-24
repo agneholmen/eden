@@ -13,6 +13,7 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
 
 
 class Animal:
+    max_age = 10
     def __init__(self,  strength=STAT_BASE, agility=STAT_BASE):
         self.energy = 50
         self.sex = enums.randomize()
@@ -22,9 +23,13 @@ class Animal:
         self.fatigue = 0
         self.breeding = 5
         self.name = id_generator()
+        self.iteration = 0
 
     def is_dead(self):
-        return True if self.energy <= 0 else False
+        if self.energy <= 0 or self.age > self.max_age:
+            return True
+        else:
+            return False
     
     def increase_age(self, amount=1):
         self.age += amount
@@ -34,9 +39,11 @@ class Animal:
         return "Energy: {0}\nSex: {1}\nAge: {2}\nStrength: {3}\nAgility: {4}\nFatigue: {5}".format(self.energy, self.sex, self.age, self.strength, self.agility, self.fatigue)
 
 class Rabbit(Animal):
+    max_age = 15
+    breeding_age = 2
     def __init__(self, strength=RABBIT_BASE_STRENGTH + random.randint(-5, 5), agility=RABBIT_BASE_AGILITY + random.randint(-5, 5)):
         super().__init__(strength, agility)
-        self.breeding = 3
+        self.breeding = Rabbit.breeding_age
 
     def eat_grass(self, grass, amount=10):
         self.energy += grass.eaten(amount)
@@ -48,10 +55,12 @@ class Rabbit(Animal):
         return f"Name: {self.name}, Sex: {self.sex}, Strength: {self.strength}, Agility: {self.agility}, Energy: {self.energy}"
 
 class Wolf(Animal):
+    max_age = 30
+    breeding_age = 8
     def __init__(self, strength=WOLF_BASE_STRENGTH + random.randint(-5, 5), agility=WOLF_BASE_AGILITY + random.randint(-5, 5), energy=75):
         super().__init__(strength, agility)
         self.energy = energy
-        self.breeding = 10
+        self.breeding = Wolf.breeding_age
 
     def tire(self, amount=5):
         self.energy -= amount

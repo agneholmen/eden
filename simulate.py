@@ -91,8 +91,8 @@ class World:
 
             print(line_string)
             
-        print(f"WOLVES, Number: {str(self.get_number_of_wolves())}, Strength: {str(self.get_wolf_average_strength())}, Agility: {str(self.get_wolf_average_agility())}, {self.get_wolf_sex_percentages()}")
-        print(f"RABBITS, Number: {str(self.get_number_of_rabbits())}, Strength: {str(self.get_rabbit_average_strength())}, Agility: {str(self.get_rabbit_average_agility())}, {self.get_rabbit_sex_percentages()}")
+        print(f"WOLVES, Number: {str(self.get_number_of_wolves())}, Strength: {str(self.get_wolf_average_strength())}, Agility: {str(self.get_wolf_average_agility())}, {self.get_wolf_sex_percentages()}, Age: {str(self.get_wolf_average_age())}")
+        print(f"RABBITS, Number: {str(self.get_number_of_rabbits())}, Strength: {str(self.get_rabbit_average_strength())}, Agility: {str(self.get_rabbit_average_agility())}, {self.get_rabbit_sex_percentages()}, Age: {str(self.get_rabbit_average_age())}")
         print(f"Number of grass: {str(self.get_number_of_grass())}")
 
     def find_neighbours(self, row_index, cell_index):
@@ -181,6 +181,19 @@ class World:
 
         return f"Male: {round((male / (male + female)) * 100, 1)}%, Female: {round((female / (male + female)) * 100, 1)}%"
     
+    def get_rabbit_average_age(self):
+        age = 0
+        number_of_rabbits = self.get_number_of_rabbits()
+        if number_of_rabbits == 0:
+            return 0
+        for row in self.map:
+            for cell in row:
+                if cell.rabbits:
+                    for rabbit in cell.rabbits:
+                        age += rabbit.age
+
+        return round(age / number_of_rabbits, 1)
+
     # Wolf STAT functions
     def get_number_of_wolves(self):
         wolves = 0
@@ -233,6 +246,19 @@ class World:
                             male += 1
 
         return f"Male: {round((male / (male + female)) * 100, 1)}%, Female: {round((female / (male + female)) * 100, 1)}%"
+    
+    def get_wolf_average_age(self):
+        age = 0
+        number_of_wolves = self.get_number_of_wolves()
+        if number_of_wolves == 0:
+            return 0
+        for row in self.map:
+            for cell in row:
+                if cell.wolves:
+                    for wolf in cell.wolves:
+                        age += wolf.age
+
+        return round(age / number_of_wolves, 1)
 
 def main(iterations, max_height, max_width, delay):
     world = World(iterations, max_height, max_width)
@@ -263,6 +289,9 @@ def main(iterations, max_height, max_width, delay):
                     # Sort by strength to add evolutional pressure for strength
                     cell.rabbits.sort(key=lambda x: x.strength, reverse=True)
                     for rabbit in cell.rabbits:
+                        if rabbit.iteration > i:
+                            continue
+                        rabbit.iteration += 1
                         # Lose energy
                         rabbit.tire()
                         # Age
@@ -281,14 +310,23 @@ def main(iterations, max_height, max_width, delay):
                             else:
                                 neighbours = world.find_neighbours(row_index, cell_index)
                                 for n in neighbours:
-                                    if world.map[n[0]][n[1]].grass:
+                                    # Move to cell with grass and no wolves
+                                    if world.map[n[0]][n[1]].grass and not world.map[n[0]][n[1]].wolves:
                                         world.map[n[0]][n[1]].rabbits.append(rabbit)
                                         cell.rabbits.remove(rabbit)
                                         break
                                 else:
-                                    s = world.get_random_neighbour(row_index, cell_index)
-                                    world.map[s[0]][s[1]].rabbits.append(rabbit)
-                                    cell.rabbits.remove(rabbit)
+                                    for n in neighbours:
+                                        # Second best option, move to cell with grass
+                                        if world.map[n[0]][n[1]].grass:
+                                            world.map[n[0]][n[1]].rabbits.append(rabbit)
+                                            cell.rabbits.remove(rabbit)
+                                            break
+                                    else:
+                                        # Oh well, maybe random cell will be closer to grass
+                                        s = world.get_random_neighbour(row_index, cell_index)
+                                        world.map[s[0]][s[1]].rabbits.append(rabbit)
+                                        cell.rabbits.remove(rabbit)
                             continue
 
                         # Attempt to breed. First find partner.
@@ -309,8 +347,8 @@ def main(iterations, max_height, max_width, delay):
                             else:
                                 for partner in cell.rabbits:
                                     if partner != rabbit and partner.sex != rabbit.sex and partner.breeding == 0:
-                                        partner.breeding = 3
-                                        rabbit.breeding = 3
+                                        partner.breeding = Rabbit.breeding_age
+                                        rabbit.breeding = Rabbit.breeding_age
                                         if cell.grass:
                                             number_of_children = 1 + random.randint(0, int(cell.grass.size / 5))
                                         else:
@@ -333,6 +371,9 @@ def main(iterations, max_height, max_width, delay):
                     # Sort by strength to add evolutional pressure for strength
                     cell.wolves.sort(key=lambda x: x.strength, reverse=True)
                     for wolf in cell.wolves:
+                        if wolf.iteration > i:
+                            continue
+                        wolf.iteration += 1
                         # Lose energy
                         wolf.tire()
                         # Age
@@ -346,21 +387,41 @@ def main(iterations, max_height, max_width, delay):
                             else:
                                 # Try to catch a rabbit
                                 if cell.rabbits:
-                                    r = random.randint(0, len(cell.rabbits) - 1)
-                                    random_rabbit = cell.rabbits[r]
-                                    if (wolf.energy + wolf.strength) > (random_rabbit.energy + random_rabbit.agility):
-                                        wolf.energy += random_rabbit.energy
-                                        cell.rabbits.remove(random_rabbit)
+                                    cell.rabbits.sort(key=lambda x: x.agility, reverse=False)
+                                    weak_rabbit = cell.rabbits[0]
+                                    # Rabbit caught
+                                    if (wolf.energy + wolf.strength - wolf.age) >= (weak_rabbit.energy + weak_rabbit.agility - weak_rabbit.age):
+                                        wolf.energy += weak_rabbit.energy
+                                        cell.rabbits.remove(weak_rabbit)
+
+                                    # Epic fail, rabbit escapes
                                     else:
                                         wolf.tire()
-                                        random_rabbit.tire()
+                                        weak_rabbit.tire()
+                                        s = world.get_random_neighbour(row_index, cell_index)
+                                        world.map[s[0]][s[1]].rabbits.append(weak_rabbit)
+                                        cell.rabbits.remove(weak_rabbit)
+
                                 # Move to a different area, preferrably one with rabbits
                                 else:
                                     neighbours = world.find_neighbours(row_index, cell_index)
+                                    moved = False
                                     for n in neighbours:
                                         if world.map[n[0]][n[1]].rabbits:
                                             world.map[n[0]][n[1]].wolves.append(wolf)
                                             cell.wolves.remove(wolf)
+                                            break
+                                        # Check further away for rabbits
+                                        else:
+                                            more_neighbours = world.find_neighbours(n[0], n[1])
+                                            for m in more_neighbours:
+                                                # Make sure it's not the original cell
+                                                if world.map[m[0]][m[1]].rabbits and m[0] != row_index and m[1] != cell_index:
+                                                    world.map[m[0]][m[1]].wolves.append(wolf)
+                                                    cell.wolves.remove(wolf)
+                                                    moved = True
+                                                    break
+                                        if moved:
                                             break
                                     else:
                                         s = world.get_random_neighbour(row_index, cell_index)
@@ -383,16 +444,34 @@ def main(iterations, max_height, max_width, delay):
                                     cell.wolves.remove(wolf)
                                 continue
                             else:
+                                # Partner of opposite sex?
                                 for partner in cell.wolves:
                                     if partner != wolf and partner.sex != wolf.sex and partner.breeding == 0:
-                                        partner.breeding = 10
-                                        wolf.breeding = 10
-                                        w = Wolf()
-                                        w.strength = int(((partner.strength + wolf.strength) / 2) + random.randint(0, 5))
-                                        w.agility = int(((partner.agility + wolf.agility) / 2) + random.randint(0, 5))
+                                        partner.breeding = Wolf.breeding_age
+                                        wolf.breeding = Wolf.breeding_age
+                                        number_of_children = random.randint(1, 3)
+                                        if cell.rabbits:
+                                            number_of_children += 1
+                                        for _ in range(0, number_of_children):
+                                            w = Wolf()
+                                            w.strength = int(((partner.strength + wolf.strength) / 2) + random.randint(0, 5))
+                                            w.agility = int(((partner.agility + wolf.agility) / 2) + random.randint(0, 5))
 
-                                        cell.wolves.append(w)
+                                            cell.wolves.append(w)
                                         break
+                                # Need to find partner
+                                else:
+                                    neighbours = world.find_neighbours(row_index, cell_index)
+                                    for n in neighbours:
+                                        if world.map[n[0]][n[1]].wolves:
+                                            world.map[n[0]][n[1]].wolves.append(wolf)
+                                            cell.wolves.remove(wolf)
+                                            break
+                                    else:
+                                        s = world.get_random_neighbour(row_index, cell_index)
+                                        world.map[s[0]][s[1]].wolves.append(wolf)
+                                        cell.wolves.remove(wolf)
+                                    continue
 
                         # Check if dead and remove
                         if wolf.is_dead():
