@@ -1,7 +1,5 @@
 from colorama import Fore, Style, Back
 
-import numpy as np
-
 import argparse
 import time
 
