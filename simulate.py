@@ -259,15 +259,34 @@ class World:
                         age += wolf.age
 
         return round(age / number_of_wolves, 1)
+    
+    # GENERAL stats
+    def get_all_stats(self):
+        stats = {
+            'rabbit': {
+                'strength': self.get_rabbit_average_strength(),
+                'agility': self.get_rabbit_average_agility(),
+                'age': self.get_rabbit_average_age()
+            },
+            'wolf': {
+                'strength': self.get_wolf_average_strength(),
+                'agility': self.get_wolf_average_agility(),
+                'age': self.get_wolf_average_age()
+            }
+        }
+        
+        return stats
 
 def main(iterations, max_height, max_width, delay):
     world = World(iterations, max_height, max_width)
 
+    original_stats = world.get_all_stats()
+
     print("Original:")
     world.print_world()
 
-    for i in range(1, iterations + 1):
-        print(f"Iteration {str(i)}:")
+    for current_iteration in range(1, iterations + 1):
+        print(f"Iteration {str(current_iteration)}:")
         # Grow
         for row_index, row in enumerate(world.map):
             for cell_index, cell in enumerate(row):
@@ -289,7 +308,7 @@ def main(iterations, max_height, max_width, delay):
                     # Sort by strength to add evolutional pressure for strength
                     cell.rabbits.sort(key=lambda x: x.strength, reverse=True)
                     for rabbit in cell.rabbits:
-                        if rabbit.iteration > i:
+                        if rabbit.iteration > current_iteration:
                             continue
                         rabbit.iteration += 1
                         # Lose energy
@@ -357,6 +376,7 @@ def main(iterations, max_height, max_width, delay):
                                             r = Rabbit()
                                             r.strength = int(((partner.strength + rabbit.strength) / 2) + random.randint(0, 5))
                                             r.agility = int(((partner.agility + rabbit.agility) / 2) + random.randint(0, 5))
+                                            r.iteration = rabbit.iteration
 
                                         cell.rabbits.append(r)
                                         break
@@ -371,7 +391,7 @@ def main(iterations, max_height, max_width, delay):
                     # Sort by strength to add evolutional pressure for strength
                     cell.wolves.sort(key=lambda x: x.strength, reverse=True)
                     for wolf in cell.wolves:
-                        if wolf.iteration > i:
+                        if wolf.iteration > current_iteration:
                             continue
                         wolf.iteration += 1
                         # Lose energy
@@ -456,6 +476,7 @@ def main(iterations, max_height, max_width, delay):
                                             w = Wolf()
                                             w.strength = int(((partner.strength + wolf.strength) / 2) + random.randint(0, 5))
                                             w.agility = int(((partner.agility + wolf.agility) / 2) + random.randint(0, 5))
+                                            w.iteration = wolf.iteration
 
                                             cell.wolves.append(w)
                                         break
@@ -479,6 +500,11 @@ def main(iterations, max_height, max_width, delay):
 
         world.print_world()
         time.sleep(delay)
+
+    final_stats = world.get_all_stats()
+
+    print(original_stats)
+    print(final_stats)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
